@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Untuk Velma</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            color: #ff69b4; /* Hot Pink */
+            display: flex;
+            justify_content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Tombol Mulai */
+        #start-btn {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #ff69b4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 0 15px #ff69b4;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Scanner Effect */
+        #scanner {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.9),
+                rgba(0, 0, 0, 0.9) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            z-index: 10;
+        }
+
+        .scan-line {
+            width: 100%;
+            height: 5px;
+            background: #ff69b4;
+            position: absolute;
+            box-shadow: 0 0 20px #ff69b4;
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: -10%; }
+            100% { top: 110%; }
+        }
+
+        /* Matrix Canvas */
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            opacity: 0; 
+            transition: opacity 1s;
+        }
+
+        /* Countdown & Final Text */
+        #overlay {
+            position: absolute;
+            z-index: 20;
+            text-align: center;
+            width: 100%;
+            pointer-events: none;
+        }
+
+        .countdown {
+            font-size: 10rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px #ff69b4;
+            display: none;
+        }
+
+        .final-msg {
+            font-size: 3rem;
+            display: none;
+            text-shadow: 0 0 20px #ff69b4;
+            animation: zoomIn 1s ease-out;
+            padding: 20px;
+        }
+
+        .heart {
+            font-size: 5rem;
+            color: red;
+            animation: beat 1s infinite;
+        }
+
+        @keyframes zoomIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes beat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <button id="start-btn">Klik Untuk Membuka Surat ❤️</button>
+    <audio id="bg-music" loop>
+        <source src="musik.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="scanner">
+        <div class="scan-line"></div>
+        <h2 style="position:absolute; top:50%; width:100%; text-align:center; background:black;">SCANNING SYSTEM...</h2>
+    </div>
+
+    <canvas id="matrix"></canvas>
+
+    <div id="overlay">
+        <div id="count" class="countdown"></div>
+        <div id="final" class="final-msg">
+            AKU MENCINTAIMU<br>SELALU<br>
+            <span style="font-size: 4rem; font-weight: bold;">VELMA</span><br>
+            <div class="heart">❤️</div>
+        </div>
+    </div>
+
+    <script>
+        const startBtn = document.getElementById('start-btn');
+        const scanner = document.getElementById('scanner');
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        const countDiv = document.getElementById('count');
+        const finalDiv = document.getElementById('final');
+        const audio = document.getElementById('bg-music');
+
+        // Matrix Settings
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const katakana = '0123456789VELMAILOVEYOU';
+        const letters = katakana.split('');
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+        const drops = [];
+
+        for (let x = 0; x < columns; x++) {
+            drops[x] = 1;
+        }
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ff69b4'; // Pink Text
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = letters[Math.floor(Math.random() * letters.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+
+        let matrixInterval;
+
+        // Sequence Logic
+        startBtn.addEventListener('click', () => {
+            startBtn.style.display = 'none';
+            audio.play().catch(e => console.log("Audio play failed:", e)); // Play music
+            
+            // 1. Start Scanner
+            scanner.style.display = 'block';
+
+            setTimeout(() => {
+                // 2. Start Matrix Rain (After 3s)
+                scanner.style.display = 'none';
+                canvas.style.opacity = '1';
+                matrixInterval = setInterval(drawMatrix, 33);
+
+                // 3. Start Countdown (After another 2s playing matrix)
+                setTimeout(() => {
+                    startCountdown();
+                }, 3000);
+
+            }, 3000); // Scan duration
+        });
+
+        function startCountdown() {
+            let timer = 3;
+            countDiv.style.display = 'block';
+            countDiv.innerText = timer;
+
+            const countInterval = setInterval(() => {
+                timer--;
+                if (timer > 0) {
+                    countDiv.innerText = timer;
+                } else {
+                    clearInterval(countInterval);
+                    countDiv.style.display = 'none';
+                    showFinalSurprise();
+                }
+            }, 1000);
+        }
+
+        function showFinalSurprise() {
+            // Keep matrix running in background but darker? Or stop it?
+            // Let's clear it for focus
+            clearInterval(matrixInterval);
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            finalDiv.style.display = 'block';
+        }
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
